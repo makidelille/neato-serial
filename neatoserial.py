@@ -177,7 +177,8 @@ class NeatoSerial:
         output = self.write("GetErr")
         if output is not None:
             outputsplit = output.split('\r\n')
-            if len(outputsplit) == 3:
+            print(outputsplit)
+            if len(outputsplit) >= 3:
                 err = outputsplit[1]
                 if ' - ' in err:
                     errsplit = err.split(' - ')
