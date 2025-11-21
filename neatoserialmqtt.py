@@ -21,7 +21,7 @@ error = ns.getError()
 #Function utilized when MQTT Autodiscovery is used - uses "state" schema in Homeassistant
 def discovery_payload():
     config_data = {
-        'availability': [{'topic': 'neato_' + serial_number +'/state'}],
+        'availability': [{'topic': 'vacuum/neato_' + serial_number +'/state'}],
         'command_topic': settings['mqtt']['command_topic'],
         'device': {
             'identifiers': ['neato_' + serial_number],
@@ -37,7 +37,7 @@ def discovery_payload():
         'payload_start': 'Clean',
         'payload_stop': 'Clean Stop',
         'schema': 'state',
-        'state_topic': settings['mqtt']['state_topic'],
+        'state_topic': 'vacuum/neato_' + serial_number +'/state',
         'json_attributes_topic': 'vacuum/neato_' + serial_number + '/attributes',
         'supported_features': ['start', 'stop',  'status', 'locate', 'clean_spot']
     }
@@ -84,7 +84,7 @@ def discovery_payload():
     log.debug("Sending MQTT Config Message: "+str(json_sensor_config))
     client.publish(settings['mqtt']['discovery_topic'] + '/sensor/neato_' + serial_number + '/config', json_sensor_config)
     log.debug("Sending vacuum state message: "+str(json_state_data))
-    client.publish(settings['mqtt']['state_topic'], json_state_data)
+    client.publish('vacuum/neato_' + serial_number + '/state', json_state_data)
     log.debug("Sending vacuum attributes message: "+str(json_attributes_data))
     client.publish('vacuum/neato_' + serial_number + '/attributes', json_attributes_data)
     log.debug("Sending vacuum battery message: "+str(json_battery_data))
