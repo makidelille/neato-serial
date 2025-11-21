@@ -10,18 +10,19 @@ import logging
 
 ns = NeatoSerial()
 serial_number = ns.getSerialNumber()
-software_version = ns.getSoftwareVersion()
-is_docked = ns.getExtPwrPresent()
-is_cleaning = ns.getCleaning()
-is_charging = ns.getChargingActive()
-fan_speed = ns.getVacuumRPM()
-battery_level = ns.getBatteryLevel()
-error = ns.getError()
 
 prefix = 'vacuum/neato_' + serial_number
 
 #Function utilized when MQTT Autodiscovery is used - uses "state" schema in Homeassistant
 def discovery_payload():
+    software_version = ns.getSoftwareVersion()
+    is_docked = ns.getExtPwrPresent()
+    is_cleaning = ns.getCleaning()
+    is_charging = ns.getChargingActive()
+    fan_speed = ns.getVacuumRPM()
+    battery_level = ns.getBatteryLevel()
+    error = ns.getError()
+
     config_data = {
         'command_topic': prefix + '/command',
         'device': {
@@ -56,6 +57,7 @@ def discovery_payload():
         'value_template': '{{ value_json.battery_level }}',
         'json_attributes_template': "{{ value_json | tojson }}"
     }
+
     state_data = {}
     battery_data = {}
     battery_data["battery_level"] = battery_level
