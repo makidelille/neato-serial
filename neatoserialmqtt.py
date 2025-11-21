@@ -21,7 +21,6 @@ error = ns.getError()
 #Function utilized when MQTT Autodiscovery is used - uses "state" schema in Homeassistant
 def discovery_payload():
     config_data = {
-        'availability': [{'topic': 'vacuum/neato_' + serial_number +'/state'}],
         'command_topic': settings['mqtt']['command_topic'],
         'device': {
             'identifiers': ['neato_' + serial_number],
@@ -38,7 +37,6 @@ def discovery_payload():
         'payload_stop': 'Clean Stop',
         'schema': 'state',
         'state_topic': 'vacuum/neato_' + serial_number +'/state',
-        'json_attributes_topic': 'vacuum/neato_' + serial_number + '/attributes',
         'supported_features': ['start', 'stop',  'status', 'locate', 'clean_spot']
     }
 
@@ -57,18 +55,17 @@ def discovery_payload():
         'json_attributes_template': "{{ value_json | tojson }}"
     }
     state_data = {}
-    attributes_data = {}
     battery_data = {}
     battery_data["battery_level"] = battery_level
     state_data["fan_speed"] = fan_speed
-    attributes_data["charging"] = is_charging
+    state_data["charging"] = is_charging
     if is_docked:
         state_data["state"] = "docked"
     elif is_cleaning:
         state_data["state"] = "cleaning"
     elif error:
         log.debug("Error from Neato: "+str(error[1]))
-        attributes_data["error"] = error[1]
+        state_data["error"] = error[1]
         state_data["state"] = "error"
     else:
         state_data["state"] = "idle"
@@ -77,7 +74,6 @@ def discovery_payload():
     json_config_data = json.dumps(config_data)
     json_sensor_config = json.dumps(sensor_config_data)
     json_state_data = json.dumps(state_data)
-    json_attributes_data = json.dumps(attributes_data)
     json_battery_data = json.dumps(battery_data)
     log.debug("Sending MQTT Config Message: "+str(json_config_data))
     client.publish(settings['mqtt']['discovery_topic'] + '/vacuum/neato_' + serial_number + '/config', json_config_data)
@@ -85,8 +81,6 @@ def discovery_payload():
     client.publish(settings['mqtt']['discovery_topic'] + '/sensor/neato_' + serial_number + '/config', json_sensor_config)
     log.debug("Sending vacuum state message: "+str(json_state_data))
     client.publish('vacuum/neato_' + serial_number + '/state', json_state_data)
-    log.debug("Sending vacuum attributes message: "+str(json_attributes_data))
-    client.publish('vacuum/neato_' + serial_number + '/attributes', json_attributes_data)
     log.debug("Sending vacuum battery message: "+str(json_battery_data))
     client.publish('vacuum/neato_' + serial_number + '/battery', json_battery_data)
     time.sleep(settings['mqtt']['publish_wait_seconds'])
