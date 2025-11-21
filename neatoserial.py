@@ -266,7 +266,7 @@ class NeatoSerial:
     def getSoftwareVersion(self):
         softwareVer = self.getVersion()
         if softwareVer:
-            return softwareVer.get("MainBoard Software", "1234")
+            return softwareVer.get("Software", "1234")
         else:
             return str(1234)
 

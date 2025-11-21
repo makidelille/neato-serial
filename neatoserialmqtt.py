@@ -10,12 +10,13 @@ import logging
 
 ns = NeatoSerial()
 serial_number = ns.getSerialNumber()
+software_version = ns.getSoftwareVersion()
 
 prefix = 'vacuum/neato_' + serial_number
 
 #Function utilized when MQTT Autodiscovery is used - uses "state" schema in Homeassistant
 def discovery_payload():
-    software_version = ns.getSoftwareVersion()
+    
     is_docked = ns.getExtPwrPresent()
     is_cleaning = ns.getCleaning()
     is_charging = ns.getChargingActive()
@@ -35,7 +36,7 @@ def discovery_payload():
         'name': settings['device']['name'],
         'unique_id': 'neato_' + serial_number,
         'payload_clean_spot': 'Clean Spot',
-        'payload_locate': 'PlaySound 19',
+        'payload_locate': 'PlaySound SoundID 20',
         'payload_start': 'Clean',
         'payload_stop': 'Clean Stop',
         'schema': 'state',
