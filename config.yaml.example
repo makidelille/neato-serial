@@ -12,4 +12,8 @@ mqtt:
   #discovery_topic:
   command_topic: vacuum/command	#MQTT topic for receiving commands
   state_topic: vacuum/state	#MQTT topic for publishing state
+  battery_topic: vacuum/battery	#MQTT topic for publishing battery
   publish_wait_seconds: 5 #Delay in seconds before updating state again
+device:
+  name: neato_serial_vacuum # name of device in home assistant
+  model: XV Series #Model of device 

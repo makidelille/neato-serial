@@ -25,12 +25,12 @@ def discovery_payload():
         'command_topic': settings['mqtt']['command_topic'],
         'device': {
             'identifiers': ['Neato_serial_' + serial_number],
-            'name': 'neato_serial_vacuum',
+            'name': settings['device']['name'],
             'manufacturer': 'Neato Robotics',
-            'model': 'XV Series',
+            'model': settings['device']['model'],
             'sw_version': software_version
         },
-        'name': 'neato_serial_vacuum',
+        'name': settings['device']['name'],
         'unique_id': 'neato_serial_' + serial_number,
         'payload_clean_spot': 'Clean Spot',
         'payload_locate': 'PlaySound 19',
@@ -39,11 +39,31 @@ def discovery_payload():
         'schema': 'state',
         'state_topic': settings['mqtt']['state_topic'],
         'json_attributes_topic': 'vacuum/neato_serial_' + serial_number + '/attributes',
-        'supported_features': ['start', 'stop', 'battery', 'status', 'locate', 'clean_spot']
+        'supported_features': ['start', 'stop',  'status', 'locate', 'clean_spot']
+    }
+
+    sensor_config_data = {
+        'availability': [{'topic': 'neato_serial_' + serial_number +'/battery'}],
+        'device': {
+            'identifiers': ['Neato_serial_' + serial_number],
+            'name': settings['device']['name'],
+            'manufacturer': 'Neato Robotics',
+            'model': settings['device']['model'],
+            'sw_version': software_version
+        },
+        'device_class': 'battery',
+        'name': settings['device']['name'],
+        'unique_id': 'neato_serial_' + serial_number,
+        'schema': 'state',
+        'state_class': 'measurement',
+        'state_topic': settings['mqtt']['battery_topic'],
+        'unit_of_measurement': '%',
+        'value_template': '{{ value_json.battery_level }}'
     }
     state_data = {}
     attributes_data = {}
-    state_data["battery_level"] = battery_level
+    battery_data = {}
+    battery_data["battery_level"] = battery_level
     state_data["fan_speed"] = fan_speed
     attributes_data["charging"] = is_charging
     if is_docked:
@@ -59,14 +79,20 @@ def discovery_payload():
 
     #Convert config, state, and attributes payloads to json + publish them
     json_config_data = json.dumps(config_data)
+    json_sensor_config = json.dumps(sensor_config_data)
     json_state_data = json.dumps(state_data)
     json_attributes_data = json.dumps(attributes_data)
+    json_battery_data = json.dumps(battery_data)
     log.debug("Sending MQTT Config Message: "+str(json_config_data))
     client.publish(settings['mqtt']['discovery_topic'] + '/vacuum/neato_serial_' + serial_number + '/config', json_config_data)
+    log.debug("Sending MQTT Config Message: "+str(json_sensor_config))
+    client.publish(settings['mqtt']['discovery_topic'] + '/sensor/neato_serial_' + serial_number + '/config', json_sensor_config)
     log.debug("Sending vacuum state message: "+str(json_state_data))
     client.publish(settings['mqtt']['state_topic'], json_state_data)
     log.debug("Sending vacuum attributes message: "+str(json_attributes_data))
     client.publish('vacuum/neato_serial_' + serial_number + '/attributes', json_attributes_data)
+    log.debug("Sending vacuum battery message: "+str(json_battery_data))
+    client.publish('vacuum/neato_serial_' + serial_number + '/battery', json_battery_data)
     time.sleep(settings['mqtt']['publish_wait_seconds'])
 
 #Function utilized when manual MQTT configuration is used - uses "legacy" schema in Homeassistant

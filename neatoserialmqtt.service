@@ -8,6 +8,7 @@ ExecStart =/usr/bin/python3 /home/pi/neato-serial/neatoserialmqtt.py
 WorkingDirectory=/home/pi/neato-serial
 StandardOutput=syslog
 StandardError=syslog
+Restart=on-failure
 
 [Install]
 WantedBy = multi-user.target
