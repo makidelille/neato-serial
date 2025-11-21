@@ -179,7 +179,7 @@ class NeatoSerial:
             outputsplit = output.split('\r\n')
             print(outputsplit)
             if len(outputsplit) >= 3:
-                err = outputsplit[1]
+                err = outputsplit[2]
                 if ' - ' in err:
                     errsplit = err.split(' - ')
                     # if err is 220 (unplug usb before cleaning) handle it
