@@ -183,8 +183,8 @@ class NeatoSerial:
                 if ' - ' in err:
                     errsplit = err.split(' - ')
                     # if err is 220 (unplug usb before cleaning) handle it
-                    self.log.debug("Errorcode is 220")
-                    print("Errorcode is 220")
+                    self.log.debug("Errorcode is " + errsplit[0])
+                    print("Errorcode is" + errsplit[0])
                     if int(errsplit[0]) == 220:
                         print("Toggling USB")
                         self.toggleusb()
