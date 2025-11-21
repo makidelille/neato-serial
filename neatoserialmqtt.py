@@ -92,13 +92,12 @@ def discovery_payload():
     log.debug("Sending vacuum attributes message: "+str(json_attributes_data))
     client.publish('vacuum/neato_serial_' + serial_number + '/attributes', json_attributes_data)
     log.debug("Sending vacuum battery message: "+str(json_battery_data))
-    client.publish('vacuum/neato_serial_' + serial_number + '/battery', json_battery_data)
+    client.publish(settings['mqtt']['battery_topic'], json_battery_data)
     time.sleep(settings['mqtt']['publish_wait_seconds'])
 
 #Function utilized when manual MQTT configuration is used - uses "legacy" schema in Homeassistant
 def legacy_payload():
     legacy_data = {}
-    legacy_data["battery_level"] = battery_level
     legacy_data["docked"] = is_docked
     legacy_data["cleaning"] = is_cleaning
     legacy_data["charging"] = is_charging
@@ -110,6 +109,11 @@ def legacy_payload():
     json_legacy_data = json.dumps(legacy_data)
     log.debug("Sending vacuum state message: "+str(json_legacy_data))
     client.publish(settings['mqtt']['state_topic'], json_legacy_data)
+    battery_data = {}
+    battery_data["battery_level"] = battery_level
+    json_battery_data = json.dumps(battery_data)
+    log.debug("Sending vacuum battery message: "+str(json_battery_data))
+    client.publish(settings['mqtt']['battery_topic'], json_battery_data)
     time.sleep(settings['mqtt']['publish_wait_seconds'])
 
 def on_message(client, userdata, msg):
@@ -119,7 +123,6 @@ def on_message(client, userdata, msg):
     if 'discovery_topic' in settings['mqtt']:
         if (inp == "Clean") or (inp == "Clean Spot"):
             on_message_data={}
-            on_message_data["battery_level"] = battery_level
             on_message_data["fan_speed"] = fan_speed
             on_message_data["state"] = "cleaning"
             json_on_message_data = json.dumps(on_message_data)
@@ -129,7 +132,6 @@ def on_message(client, userdata, msg):
             log.info("Feedback from device: "+feedback)
         elif inp == "Clean Stop":
             on_message_data={}
-            on_message_data["battery_level"] = battery_level
             on_message_data["fan_speed"] = fan_speed
             on_message_data["state"] = "idle"
             json_on_message_data = json.dumps(on_message_data)
@@ -143,7 +145,6 @@ def on_message(client, userdata, msg):
     else:
         if (inp == "Clean") or (inp == "Clean Spot"):
             on_message_data={}
-            on_message_data["battery_level"] = battery_level
             on_message_data["docked"] = is_docked
             on_message_data["cleaning"] = True
             on_message_data["charging"] = is_charging
@@ -155,7 +156,6 @@ def on_message(client, userdata, msg):
             log.info("Feedback from device: "+feedback)
         elif inp == "Clean Stop":
             on_message_data={}
-            on_message_data["battery_level"] = battery_level
             on_message_data["docked"] = is_docked
             on_message_data["cleaning"] = False
             on_message_data["charging"] = is_charging
