@@ -18,10 +18,12 @@ fan_speed = ns.getVacuumRPM()
 battery_level = ns.getBatteryLevel()
 error = ns.getError()
 
+prefix = 'vacuum/neato_' + serial_number
+
 #Function utilized when MQTT Autodiscovery is used - uses "state" schema in Homeassistant
 def discovery_payload():
     config_data = {
-        'command_topic': settings['mqtt']['command_topic'],
+        'command_topic': prefix + '/command',
         'device': {
             'identifiers': ['neato_' + serial_number],
             'name': settings['device']['name'],
@@ -36,7 +38,7 @@ def discovery_payload():
         'payload_start': 'Clean',
         'payload_stop': 'Clean Stop',
         'schema': 'state',
-        'state_topic': 'vacuum/neato_' + serial_number +'/state',
+        'state_topic': prefix + '/state',
         'supported_features': ['start', 'stop',  'status', 'locate', 'clean_spot']
     }
 
@@ -49,7 +51,7 @@ def discovery_payload():
         'name': settings['device']['name'],
         'unique_id': 'neato_' + serial_number + '_battery_level',
         'state_class': 'measurement',
-        'state_topic':'vacuum/neato_' + serial_number + '/battery',
+        'state_topic': prefix + '/battery',
         'unit_of_measurement': '%',
         'value_template': '{{ value_json.battery_level }}',
         'json_attributes_template': "{{ value_json | tojson }}"
@@ -80,9 +82,9 @@ def discovery_payload():
     log.debug("Sending MQTT Config Message: "+str(json_sensor_config))
     client.publish(settings['mqtt']['discovery_topic'] + '/sensor/neato_' + serial_number + '/config', json_sensor_config)
     log.debug("Sending vacuum state message: "+str(json_state_data))
-    client.publish('vacuum/neato_' + serial_number + '/state', json_state_data)
+    client.publish(prefix + '/state', json_state_data)
     log.debug("Sending vacuum battery message: "+str(json_battery_data))
-    client.publish('vacuum/neato_' + serial_number + '/battery', json_battery_data)
+    client.publish(prefix + '/battery', json_battery_data)
     time.sleep(settings['mqtt']['publish_wait_seconds'])
 
 #Function utilized when manual MQTT configuration is used - uses "legacy" schema in Homeassistant
@@ -111,25 +113,6 @@ def on_message(client, userdata, msg):
     inp = msg.payload.decode('ascii')
     log.info("Message received: "+inp)
     if 'discovery_topic' in settings['mqtt']:
-        if (inp == "Clean") or (inp == "Clean Spot"):
-            on_message_data={}
-            on_message_data["fan_speed"] = fan_speed
-            on_message_data["state"] = "cleaning"
-            json_on_message_data = json.dumps(on_message_data)
-            #Use secondary client connection to set state to cleaning before Pi reboots (Can't publish with primary client whithin callback function)
-            cleaning_client.publish(settings['mqtt']['state_topic'], json_on_message_data)
-            feedback = ns.write(inp)
-            log.info("Feedback from device: "+feedback)
-        elif inp == "Clean Stop":
-            on_message_data={}
-            on_message_data["fan_speed"] = fan_speed
-            on_message_data["state"] = "idle"
-            json_on_message_data = json.dumps(on_message_data)
-            #Use secondary client connection to set state to idle before Pi reboots (Can't publish with primary client whithin callback function)
-            cleaning_client.publish(settings['mqtt']['state_topic'], json_on_message_data)
-            feedback = ns.write(inp)
-            log.info("Feedback from device: "+feedback)
-        else:
             feedback = ns.write(inp)
             log.info("Feedback from device: "+feedback)
     else:
@@ -141,7 +124,6 @@ def on_message(client, userdata, msg):
             on_message_data["fan_speed"] = fan_speed
             json_on_message_data = json.dumps(on_message_data)
             #Use secondary client connection to set state to cleaning before Pi reboots (Can't publish with primary client whithin callback function)
-            cleaning_client.publish(settings['mqtt']['state_topic'], json_on_message_data)
             feedback = ns.write(inp)
             log.info("Feedback from device: "+feedback)
         elif inp == "Clean Stop":
@@ -152,7 +134,6 @@ def on_message(client, userdata, msg):
             on_message_data["fan_speed"] = fan_speed
             json_on_message_data = json.dumps(on_message_data)
             #Use secondary client connection to set state to cleaning before Pi reboots (Can't publish with primary client whithin callback function)
-            cleaning_client.publish(settings['mqtt']['state_topic'], json_on_message_data)
             feedback = ns.write(inp)
             log.info("Feedback from device: "+feedback)
         else:
@@ -169,7 +150,6 @@ def on_connect(client, userdata, flags, rc):
 def on_disconnect(client, userdata, rc):
     """Handle MQTT client disconnect."""
     #Set availability to offline if disconnected from MQTT Broker
-    cleaning_client.publish('neato_serial_' + serial_number +'/state', 'offline', qos=0, retain=True)
     client.loop_stop(force=False)
     if rc != 0:
         log.info("Unexpected disconnection.")
@@ -193,25 +173,19 @@ log.addHandler(fh)
 log.debug("Starting")
 #Primary Client
 client = mqtt.Client()
-#Secondary client that will handle publishing the "cleaning state" when on_message callback is called
-cleaning_client = mqtt.Client()
 client.on_message = on_message
 client.on_disconnect = on_disconnect
 client.on_connect = on_connect
 client.username_pw_set(settings['mqtt']['username'],
                        settings['mqtt']['password'])
-cleaning_client.username_pw_set(settings['mqtt']['username'],
-                       settings['mqtt']['password'])
 log.debug("Connecting")
 client.connect(settings['mqtt']['host'], settings['mqtt']['port'])
-cleaning_client.connect(settings['mqtt']['host'], settings['mqtt']['port'])
-client.subscribe(settings['mqtt']['command_topic'], qos=1)
+client.subscribe(prefix + '/command', qos=1)
 log.debug("Setting up serial")
 
 
 log.debug("Ready")
 client.loop_start()
-cleaning_client.loop_start()
 while True:
     # try:
     #if not ns.getIsConnected():
@@ -226,10 +200,8 @@ while True:
     error = ns.getError()
     #Determine whether end-user is using MQTT Autodiscovery or Manual configuration
     if 'discovery_topic' in settings['mqtt']:
-        client.publish('neato_serial_' + serial_number +'/state', 'online', qos=0, retain=True)
         discovery_payload()
     else:
-        client.publish('neato_serial_' + serial_number +'/state', 'online', qos=0, retain=True)
         legacy_payload()
         # except Exception as ex:
         #     log.error("Error getting status: "+str(ex))
