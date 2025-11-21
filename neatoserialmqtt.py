@@ -21,44 +21,40 @@ error = ns.getError()
 #Function utilized when MQTT Autodiscovery is used - uses "state" schema in Homeassistant
 def discovery_payload():
     config_data = {
-        'availability': [{'topic': 'neato_serial_' + serial_number +'/state'}],
+        'availability': [{'topic': 'neato_' + serial_number +'/state'}],
         'command_topic': settings['mqtt']['command_topic'],
         'device': {
-            'identifiers': ['Neato_serial_' + serial_number],
+            'identifiers': ['neato_' + serial_number],
             'name': settings['device']['name'],
             'manufacturer': 'Neato Robotics',
             'model': settings['device']['model'],
             'sw_version': software_version
         },
         'name': settings['device']['name'],
-        'unique_id': 'neato_serial_' + serial_number,
+        'unique_id': 'neato_' + serial_number,
         'payload_clean_spot': 'Clean Spot',
         'payload_locate': 'PlaySound 19',
         'payload_start': 'Clean',
         'payload_stop': 'Clean Stop',
         'schema': 'state',
         'state_topic': settings['mqtt']['state_topic'],
-        'json_attributes_topic': 'vacuum/neato_serial_' + serial_number + '/attributes',
+        'json_attributes_topic': 'vacuum/neato_' + serial_number + '/attributes',
         'supported_features': ['start', 'stop',  'status', 'locate', 'clean_spot']
     }
 
     sensor_config_data = {
-        'availability': [{'topic': 'neato_serial_' + serial_number +'/battery'}],
         'device': {
-            'identifiers': ['Neato_serial_' + serial_number],
+            'identifiers': ['neato_' + serial_number],
             'name': settings['device']['name'],
-            'manufacturer': 'Neato Robotics',
-            'model': settings['device']['model'],
-            'sw_version': software_version
         },
         'device_class': 'battery',
         'name': settings['device']['name'],
-        'unique_id': 'neato_serial_' + serial_number,
-        'schema': 'state',
+        'unique_id': 'neato_' + serial_number + '_battery_level',
         'state_class': 'measurement',
-        'state_topic': settings['mqtt']['battery_topic'],
+        'state_topic':'vacuum/neato_' + serial_number + '/battery',
         'unit_of_measurement': '%',
-        'value_template': '{{ value_json.battery_level }}'
+        'value_template': '{{ value_json.battery_level }}',
+        'json_attributes_template': "{{ value_json | tojson }}"
     }
     state_data = {}
     attributes_data = {}
@@ -84,15 +80,15 @@ def discovery_payload():
     json_attributes_data = json.dumps(attributes_data)
     json_battery_data = json.dumps(battery_data)
     log.debug("Sending MQTT Config Message: "+str(json_config_data))
-    client.publish(settings['mqtt']['discovery_topic'] + '/vacuum/neato_serial_' + serial_number + '/config', json_config_data)
+    client.publish(settings['mqtt']['discovery_topic'] + '/vacuum/neato_' + serial_number + '/config', json_config_data)
     log.debug("Sending MQTT Config Message: "+str(json_sensor_config))
-    client.publish(settings['mqtt']['discovery_topic'] + '/sensor/neato_serial_' + serial_number + '/config', json_sensor_config)
+    client.publish(settings['mqtt']['discovery_topic'] + '/sensor/neato_' + serial_number + '/config', json_sensor_config)
     log.debug("Sending vacuum state message: "+str(json_state_data))
     client.publish(settings['mqtt']['state_topic'], json_state_data)
     log.debug("Sending vacuum attributes message: "+str(json_attributes_data))
-    client.publish('vacuum/neato_serial_' + serial_number + '/attributes', json_attributes_data)
+    client.publish('vacuum/neato_' + serial_number + '/attributes', json_attributes_data)
     log.debug("Sending vacuum battery message: "+str(json_battery_data))
-    client.publish(settings['mqtt']['battery_topic'], json_battery_data)
+    client.publish('vacuum/neato_' + serial_number + '/battery', json_battery_data)
     time.sleep(settings['mqtt']['publish_wait_seconds'])
 
 #Function utilized when manual MQTT configuration is used - uses "legacy" schema in Homeassistant
